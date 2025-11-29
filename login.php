@@ -1,86 +1,122 @@
 <?php
-// ===============================
-// LOGIN DO ADMINISTRADOR
-// Página de autenticação para acesso ao painel administrativo.
-// ===============================
+/*
+====================================================
+    login.php - Página de login
+    Permite que o usuário acesse sua conta
+====================================================
+*/
 
 // ===============================
-// INCLUSÃO DE CONFIGURAÇÕES E INICIALIZAÇÃO DE SESSÃO
+// INCLUSÃO DE CONFIGURAÇÕES E SESSÃO
 // ===============================
-require_once '../php/config.php';
-session_start();
-// ===============================
-// REDIRECIONA SE JÁ ESTIVER LOGADO COMO ADMIN
-// ===============================
-if (!empty($_SESSION['is_admin'])) header('Location: index.php');
+require_once 'php/config.php'; // Inclui configurações e funções
+session_start(); // Inicia sessão
 
 // ===============================
-// PROCESSAMENTO DO FORMULÁRIO DE LOGIN
+// VARIÁVEIS DE TÍTULO E ASSETS
 // ===============================
+$page_title = 'Login - CarbonBurguer'; // Título da página
+$css_path = 'assets/css/style.css';
+$js_path = 'assets/js/app.js';
+$base_path = '';
 
-$error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email'] ?? '');
-    $senha = $_POST['senha'] ?? '';
-
-    if ($email && $senha) {
-         // ===============================
-    // CONSULTA USUÁRIO NO BANCO DE DADOS
-    // ===============================
-        $stmt = $conn->prepare("SELECT id, nome, senha, is_admin FROM usuarios WHERE email = ?");
-        $stmt->bind_param('s', $email);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        if ($row = $res->fetch_assoc()) {
-            // ===============================
-      // VERIFICAÇÃO DE SENHA E PERMISSÃO DE ADMIN
-      // ===============================
-            if (password_verify($senha, $row['senha']) && !empty($row['is_admin'])) {
-                session_regenerate_id(true);
-                $_SESSION['user_id'] = $row['id'];
-                $_SESSION['user'] = $row['nome'];
-                $_SESSION['is_admin'] = 1;
-                header('Location: index.php');
-                exit;
-            }
-        }
-    }
-    // ===============================
-  // MENSAGEM DE ERRO PARA CREDENCIAIS INVÁLIDAS
-  // ===============================
-    $error = 'Credenciais inválidas ou usuário não é admin.';
-}
+// ===============================
+// INCLUI O HEADER PADRÃO
+// ===============================
+include 'partials/header.php';
 ?>
-<!-- =============================== -->
-<!-- ESTRUTURA HTML DA TELA DE LOGIN ADMIN -->
-<!-- =============================== -->
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Login</title>
-  <link rel="stylesheet" href="../assets/css/style.css">
-</head>
-<body>
-<main class="container form-page">
-    <!-- =============================== -->
-    <!-- TÍTULO DA PÁGINA DE LOGIN -->
-    <!-- =============================== -->
-  <h2>Login Admin</h2>
-  <!-- =============================== -->
-    <!-- EXIBIÇÃO DE MENSAGEM DE ERRO -->
-    <!-- =============================== -->
-  <?php if ($error) echo "<p class='erro'>".htmlspecialchars($error)."</p>"; ?>
-  <!-- =============================== -->
-    <!-- FORMULÁRIO DE LOGIN -->
-    <!-- =============================== -->
-  <form method="post">
-    <input type="email" name="email" placeholder="Email" required>
-    <input type="password" name="senha" placeholder="Senha" required>
-    <button class="btn" type="submit">Entrar</button>
-  
-  </form>
+
+<main class="container">
+     <!--
+        ===============================
+        PÁGINA DE LOGIN
+        ===============================
+        Permite ao usuário acessar sua conta
+    -->
+    <div class="auth-page">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>Bem-vindo de volta! 👋</h1>
+                <p>Entre na sua conta para continuar</p>
+            </div>
+            <!-- Formulário de login -->
+            <form method="post" action="backend/login_process.php" class="auth-form" id="loginForm">
+                <div class="form-group">
+                    <label for="email">E-mail:</label>
+                    <input 
+                        type="email" 
+                        id="email"
+                        name="email" 
+                        placeholder="seu@email.com"
+                        required
+                        autocomplete="email"
+                        autofocus
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="senha">Senha:</label>
+                    <input 
+                        type="password" 
+                        id="senha"
+                        name="senha" 
+                        placeholder="Digite sua senha"
+                        required
+                        minlength="6"
+                        autocomplete="current-password"
+                    >
+                </div>
+
+                <button class="btn btn-primary btn-large" type="submit">
+                    Entrar →
+                </button>
+            </form>
+            <!-- Esqueceu a senha -->
+            <div style="text-align:center; margin-top:10px;">
+                <a href="#" id="forgotPasswordLink" style="font-size:0.98em;">Esqueceu a senha?</a>
+            </div>
+            <!-- Rodapé com link para cadastro -->
+            <div class="auth-footer">
+                <p>Não tem uma conta? <a href="register.php">Criar conta grátis</a></p>
+            </div>
+            <div class="auth-info">
+                <p>🔒 Seus dados estão seguros conosco</p>
+            </div>
+            <!-- Modal Esqueceu a Senha -->
+            <div id="forgotPasswordModal" class="modal" style="display:none; position:fixed; z-index:10001; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.45); justify-content:center; align-items:center;">
+                <div style="background:#222; padding:32px 24px 24px 24px; border-radius:8px; max-width:350px; width:90%; box-shadow:0 4px 24px rgba(0,0,0,0.18); position:relative;">
+                    <button id="closeForgotModal" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:1.3em; cursor:pointer;">&times;</button>
+                    <h2 style="margin-bottom:10px; font-size:1.2em;">Redefinir senha</h2>
+                    <form id="forgotPasswordForm" autocomplete="off">
+                        <div class="form-group">
+                            <label for="forgot_email">E-mail:</label>
+                            <input type="email" id="forgot_email" name="email" required placeholder="Digite seu e-mail">
+                        </div>
+                        <div class="form-group">
+                            <label for="forgot_new_password">Nova senha:</label>
+                            <input type="password" id="forgot_new_password" name="new_password" required minlength="6" placeholder="Nova senha">
+                        </div>
+                        <div class="form-group">
+                            <label for="forgot_confirm_password">Confirmar nova senha:</label>
+                            <input type="password" id="forgot_confirm_password" name="confirm_password" required minlength="6" placeholder="Confirme a nova senha">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:10px;">Redefinir senha</button>
+                    </form>
+                    <div id="forgotPasswordMsg" style="margin-top:10px; font-size:0.98em;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="auth-banner">
+            <h2>🔥 CarbonBurguer</h2>
+            <p>Os melhores hambúrgueres artesanais da cidade!</p>
+            <ul>
+                <li>✓ Carnes premium selecionadas</li>
+                <li>✓ Sabor defumado único</li>
+                <li>✓ Entrega rápida</li>
+                <li>✓ Ingredientes frescos</li>
+            </ul>
+        </div>
+    </div>
 </main>
-</body>
-</html>
+
+<?php include 'partials/footer.php'; ?>
